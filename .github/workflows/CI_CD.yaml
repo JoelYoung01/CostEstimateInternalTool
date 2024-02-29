@@ -1,0 +1,17 @@
+name: Deploy to PROD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Deploy_to_environment:
+    uses: ./.github/workflows/Deploy.yaml
+    with:
+      environment: production
+    secrets:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
