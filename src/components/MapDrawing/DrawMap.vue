@@ -10,6 +10,7 @@ import DrawingGuide from "./DrawingGuide.vue";
 import type { DataPackage, DrawnArea } from "@/types";
 import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 import { useTheme } from "vuetify";
+import DrawingStats from "./DrawingStats.vue";
 
 interface Props {
   error?: string;
@@ -59,13 +60,15 @@ const centerOnPlace = (place_id?: string) => {
 };
 
 const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
-  if (typeof commentGetter.value === "undefined") removePolygon({ polygon: newPolygon, area: 0 });
+  if (typeof commentGetter.value === "undefined") removePolygon({ id: -1, polygon: newPolygon, area: 0, type: "Sod" });
 
   const { comments, fencedInYard, accessibleFromStreet, stairsToAccess } = await commentGetter.value!.getComment();
 
   const newDrawnArea: DrawnArea = {
+    id: dataPackage.value.drawnAreas.length + 1,
     polygon: newPolygon,
     area: google.maps.geometry.spherical.computeArea(newPolygon.getPath(), 2.093e7),
+    type: "Sod",
     comments,
     fencedInYard,
     accessibleFromStreet,
@@ -101,7 +104,7 @@ const initMap = async () => {
   }
 
   const drawOptions: google.maps.drawing.DrawingManagerOptions = {
-    drawingMode: undefined,
+    drawingMode: google.maps.drawing.OverlayType.POLYGON,
     drawingControl: false,
     drawingControlOptions: {
       position: google.maps.ControlPosition.TOP_CENTER,
@@ -217,7 +220,7 @@ onBeforeUnmount(() => {
     </CustomControl>
 
     <CustomControl position="LEFT_TOP" class="ma-1">
-      <DrawingGuide />
+      <DrawingStats />
     </CustomControl>
   </GoogleMap>
 </template>
