@@ -47,6 +47,7 @@ jobs:
       - name: Build project
         env:
           VITE_GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          BASE_URL: /internal-tool/
         run: pnpm build
 
       - name: Configure AWS credentials

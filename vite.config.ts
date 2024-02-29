@@ -6,6 +6,7 @@ import vuetify from "vite-plugin-vuetify";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: process.env.BASE_URL || "/",
   plugins: [vue(), vuetify()],
   resolve: {
     alias: {
