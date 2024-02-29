@@ -6,7 +6,6 @@ import GetComment from "../GetComment.vue";
 import DrawingManager from "./DrawingManager.vue";
 import PlaceSelector from "./PlaceSelector.vue";
 import CompassControl from "./CompassControl.vue";
-import DrawingGuide from "./DrawingGuide.vue";
 import type { DataPackage, DrawnArea } from "@/types";
 import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 import { useTheme } from "vuetify";
