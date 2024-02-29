@@ -57,4 +57,4 @@ jobs:
           aws-region: us-east-2
 
       - name: Upload to S3
-        run: aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }}/cost-estimate-tool --delete
+        run: aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }}/internal-tool --delete
