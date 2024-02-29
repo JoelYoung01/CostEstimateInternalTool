@@ -1,8 +1,11 @@
+<script setup lang="ts">
+import MapWidgetRoot from "@/components/MapDrawing/MapWidgetRoot.vue";
+</script>
+
 <template>
   <v-main>
-    <v-container>
-      <h1 class="text-h1">Map</h1>
-      <v-btn to="/"> To the home </v-btn>
+    <v-container flat class="px-lg-10 px-4">
+      <MapWidgetRoot />
     </v-container>
   </v-main>
 </template>

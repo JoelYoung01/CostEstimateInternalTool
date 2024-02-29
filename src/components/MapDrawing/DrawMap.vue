@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
   <GetComment ref="commentGetter" />
   <GoogleMap
     ref="mapRef"
-    style="height: calc(100vh - 200px); width: calc(100vw - 125px)"
+    style="height: calc(100vh - 200px); width: 100%"
     :background-color="$vuetify.theme.current.colors.background"
     :api-key="apiKey"
     :center="sodSmith"
