@@ -6,26 +6,37 @@ import type { DataPackage } from "@/types";
 const dataPackage = inject(DataPackageInjectionKey, ref<DataPackage>(DefaultDataPackage));
 
 const menuIsVisible = ref(false);
-const token = ref("");
+const encodedData = ref("");
 const importErrors = ref<string[]>([]);
 const showCheckMark = ref(false);
 
+/**
+ * Import data from the encoded string
+ */
 async function importData() {
   importErrors.value = [];
   try {
-    const data = JSON.parse(atob(token.value));
+    // decode the data
+    const data = JSON.parse(atob(encodedData.value));
+
+    // verify the data
     const issues = verifyIsDataPackage(data);
+
+    // if there are issues, log them and return
     if (typeof issues !== "undefined") {
       console.error(issues);
       importErrors.value.push(...issues);
       return;
     }
 
+    // set the data
     dataPackage.value = data;
+
+    // animate the check mark
     await animateCheckMark();
     menuIsVisible.value = false;
   } catch (e) {
-    importErrors.value.push("Invalid token");
+    importErrors.value.push("Invalid Data Package; unable to parse data.");
     console.error(e);
     return;
   }
@@ -83,6 +94,7 @@ function verifyIsDataPackage(data: any): undefined | string[] {
   }
 }
 
+/** Animate the check mark */
 async function animateCheckMark() {
   showCheckMark.value = true;
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -92,7 +104,7 @@ async function animateCheckMark() {
 watch(menuIsVisible, (newVal) => {
   // clear inputs on close
   if (!newVal) {
-    token.value = "";
+    encodedData.value = "";
     importErrors.value = [];
   }
 });
@@ -108,7 +120,7 @@ watch(menuIsVisible, (newVal) => {
       <v-card min-width="250px">
         <v-card-title>Import Data</v-card-title>
         <v-card-text>
-          <v-text-field v-model="token" :error-messages="importErrors" label="Data" variant="outlined" />
+          <v-text-field v-model="encodedData" :error-messages="importErrors" label="Encoded Data" variant="outlined" />
         </v-card-text>
         <v-card-actions>
           <v-btn @click="menuIsVisible = false">Cancel</v-btn>

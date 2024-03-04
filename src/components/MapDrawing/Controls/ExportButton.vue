@@ -7,8 +7,12 @@ const dataPackage = inject(DataPackageInjectionKey, ref<DataPackage>(DefaultData
 
 const showCheckMark = ref(false);
 
+/** Whether to disable the button */
 const disableButton = computed(() => showCheckMark.value || !dataPackage.value.drawnAreas.length);
 
+/**
+ * Export the data to the clipboard
+ */
 async function exportDataToClipboard() {
   try {
     const stringifiedData = JSON.stringify(dataPackage.value);
@@ -20,6 +24,9 @@ async function exportDataToClipboard() {
   }
 }
 
+/**
+ * Animate the check mark
+ */
 async function animateCheckMark() {
   showCheckMark.value = true;
   await new Promise((resolve) => setTimeout(resolve, 1000));
