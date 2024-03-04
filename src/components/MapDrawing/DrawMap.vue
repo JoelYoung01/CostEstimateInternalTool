@@ -10,6 +10,7 @@ import type { DataPackage, DrawnArea } from "@/types";
 import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 import { useTheme } from "vuetify";
 import DrawingStats from "./DrawingStats.vue";
+import { reactive } from "vue";
 
 interface Props {
   error?: string;
@@ -20,6 +21,7 @@ const { current: currentTheme } = useTheme();
 const sodSmith: google.maps.LatLngLiteral = { lat: 44.886297901877114, lng: -93.30808521796632 };
 
 const zoom = ref(17);
+const lastUsedPolygonId = ref(0);
 const mapRef = ref<InstanceType<typeof GoogleMap>>();
 const commentGetter = ref<InstanceType<typeof GetComment>>();
 const selectedMode = ref<"cursor" | "draw">("cursor");
@@ -63,8 +65,8 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
 
   const { comments, fencedInYard, accessibleFromStreet, stairsToAccess } = await commentGetter.value!.getComment();
 
-  const newDrawnArea: DrawnArea = {
-    id: dataPackage.value.drawnAreas.length + 1,
+  const newDrawnArea: DrawnArea = reactive({
+    id: ++lastUsedPolygonId.value,
     polygon: newPolygon,
     area: google.maps.geometry.spherical.computeArea(newPolygon.getPath(), 2.093e7),
     type: "Sod",
@@ -72,7 +74,7 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
     fencedInYard,
     accessibleFromStreet,
     stairsToAccess
-  };
+  });
 
   newPolygon.addListener("contextmenu", () => {
     removePolygon(newDrawnArea);
@@ -80,6 +82,12 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
 
   newPolygon.addListener("dblclick", () => {
     removePolygon(newDrawnArea);
+  });
+
+  newPolygon.addListener("mouseup", (polyEvent: google.maps.PolyMouseEvent) => {
+    if (typeof polyEvent.edge !== "undefined" || typeof polyEvent.vertex !== "undefined") {
+      newDrawnArea.area = google.maps.geometry.spherical.computeArea(newPolygon.getPath(), 2.093e7);
+    }
   });
 
   dataPackage.value.drawnAreas.push(newDrawnArea);
