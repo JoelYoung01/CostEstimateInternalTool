@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { inject, ref } from "vue";
+import { inject, ref, watch } from "vue";
 import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 import type { DataPackage } from "@/types";
-import useJwtUtil from "@/composables/useJwtUtil";
-import { watch } from "vue";
-
-const jwtService = useJwtUtil();
 
 const dataPackage = inject(DataPackageInjectionKey, ref<DataPackage>(DefaultDataPackage));
 
 const menuIsVisible = ref(false);
 const token = ref("");
 const importErrors = ref<string[]>([]);
+const showCheckMark = ref(false);
 
 async function importData() {
   importErrors.value = [];
   try {
-    const data = await jwtService.fromJwtToken<DataPackage>(token.value);
+    const data = JSON.parse(atob(token.value));
     const issues = verifyIsDataPackage(data);
     if (typeof issues !== "undefined") {
       console.error(issues);
@@ -25,6 +22,8 @@ async function importData() {
     }
 
     dataPackage.value = data;
+    await animateCheckMark();
+    menuIsVisible.value = false;
   } catch (e) {
     importErrors.value.push("Invalid token");
     console.error(e);
@@ -58,8 +57,20 @@ function verifyIsDataPackage(data: any): undefined | string[] {
       polygonIssues.push(`Invalid data package; missing or corrupt area in polygon ${area.id}`);
     }
 
-    if (typeof area.polygon !== "object") {
+    if (!Array.isArray(area.paths) || !area.paths.length) {
       polygonIssues.push(`Invalid data package; missing or corrupt polygon object in polygon ${area.id}`);
+    } else {
+      for (const path of area.paths) {
+        if (!Array.isArray(path) || !path.length) {
+          polygonIssues.push(`Invalid data package; missing or corrupt path in polygon ${area.id}`);
+        } else {
+          for (const latLng of path) {
+            if (typeof latLng.lat !== "number" || typeof latLng.lng !== "number") {
+              polygonIssues.push(`Invalid data package; missing or corrupt lat/lng in polygon ${area.id}`);
+            }
+          }
+        }
+      }
     }
 
     if (area.type !== "Sod" && area.type !== "Powerwash") {
@@ -70,6 +81,12 @@ function verifyIsDataPackage(data: any): undefined | string[] {
   if (polygonIssues.length) {
     return polygonIssues;
   }
+}
+
+async function animateCheckMark() {
+  showCheckMark.value = true;
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  showCheckMark.value = false;
 }
 
 watch(menuIsVisible, (newVal) => {
@@ -88,14 +105,18 @@ watch(menuIsVisible, (newVal) => {
     <v-tooltip activator="parent" location="top">Import Data</v-tooltip>
 
     <v-menu v-model="menuIsVisible" activator="parent" :close-on-content-click="false">
-      <v-card>
+      <v-card min-width="250px">
         <v-card-title>Import Data</v-card-title>
         <v-card-text>
           <v-text-field v-model="token" :error-messages="importErrors" label="Data" variant="outlined" />
         </v-card-text>
         <v-card-actions>
           <v-btn @click="menuIsVisible = false">Cancel</v-btn>
-          <v-btn @click="importData()" color="primary">Import</v-btn>
+          <v-spacer />
+          <v-btn @click="importData()" :color="showCheckMark ? 'success' : 'primary'">
+            <v-icon v-if="showCheckMark" icon="mdi-check" />
+            <template v-else>Import</template>
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-menu>

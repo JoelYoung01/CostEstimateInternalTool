@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /// <reference types="google.maps" />
-import { ref, onMounted, onBeforeUnmount, toRaw, inject, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, toRaw, inject, computed, reactive } from "vue";
 import { CustomControl, GoogleMap } from "vue3-google-map";
 import GetComment from "../GetComment.vue";
 import DrawingManager from "./DrawingManager.vue";
@@ -10,7 +10,6 @@ import type { DataPackage, DrawnArea } from "@/types";
 import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 import { useTheme } from "vuetify";
 import DrawingStats from "./DrawingStats.vue";
-import { reactive } from "vue";
 
 interface Props {
   error?: string;
@@ -21,9 +20,9 @@ const { current: currentTheme } = useTheme();
 const sodSmith: google.maps.LatLngLiteral = { lat: 44.886297901877114, lng: -93.30808521796632 };
 
 const zoom = ref(17);
-const lastUsedPolygonId = ref(0);
 const mapRef = ref<InstanceType<typeof GoogleMap>>();
 const commentGetter = ref<InstanceType<typeof GetComment>>();
+const polygons = ref<google.maps.Polygon[]>([]);
 const selectedMode = ref<"cursor" | "draw">("cursor");
 
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -60,14 +59,27 @@ const centerOnPlace = (place_id?: string) => {
   });
 };
 
+/**
+ * Get paths from a polygon
+ * @param polygon Polygon to get paths from
+ */
+const pathsFromPolygon = (polygon: google.maps.Polygon) => {
+  return polygon
+    .getPaths()
+    .getArray()
+    .map((path) => path.getArray().map((latLng) => ({ lat: latLng.lat(), lng: latLng.lng() })));
+};
+
 const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
-  if (typeof commentGetter.value === "undefined") removePolygon({ id: -1, polygon: newPolygon, area: 0, type: "Sod" });
+  if (typeof commentGetter.value === "undefined") newPolygon.setMap(null);
 
   const { comments, fencedInYard, accessibleFromStreet, stairsToAccess } = await commentGetter.value!.getComment();
 
-  const newDrawnArea: DrawnArea = reactive({
-    id: ++lastUsedPolygonId.value,
-    polygon: newPolygon,
+  const polygonId = polygons.value.length + 1;
+
+  const newDrawnArea = reactive<DrawnArea>({
+    id: polygonId,
+    paths: pathsFromPolygon(newPolygon),
     area: google.maps.geometry.spherical.computeArea(newPolygon.getPath(), 2.093e7),
     type: "Sod",
     comments,
@@ -77,29 +89,32 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
   });
 
   newPolygon.addListener("contextmenu", () => {
-    removePolygon(newDrawnArea);
+    removePolygon(polygonId);
   });
 
   newPolygon.addListener("dblclick", () => {
-    removePolygon(newDrawnArea);
+    removePolygon(polygonId);
   });
 
   newPolygon.addListener("mouseup", (polyEvent: google.maps.PolyMouseEvent) => {
     if (typeof polyEvent.edge !== "undefined" || typeof polyEvent.vertex !== "undefined") {
       newDrawnArea.area = google.maps.geometry.spherical.computeArea(newPolygon.getPath(), 2.093e7);
+      newDrawnArea.paths = pathsFromPolygon(newPolygon);
     }
   });
 
   dataPackage.value.drawnAreas.push(newDrawnArea);
 };
 
-const removePolygon = (drawnArea: DrawnArea) => {
-  toRaw(drawnArea.polygon).setMap(null);
-  dataPackage.value.drawnAreas = dataPackage.value.drawnAreas.filter((p) => p.polygon.getMap() !== null);
+const removePolygon = (id: number) => {
+  toRaw(polygons.value[id]).setMap(null);
+  dataPackage.value.drawnAreas = dataPackage.value.drawnAreas.filter((p) => p.id !== id);
 };
 
 const clearAllPolygons = () => {
-  dataPackage.value.drawnAreas.forEach(removePolygon);
+  dataPackage.value.drawnAreas = [];
+  polygons.value.forEach((p) => p.setMap(null));
+  polygons.value = [];
 };
 
 const initMap = async () => {

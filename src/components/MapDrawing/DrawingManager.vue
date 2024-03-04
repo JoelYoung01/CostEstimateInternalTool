@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ExportButton from "./Controls/ExportButton.vue";
 import ImportButton from "./Controls/ImportButton.vue";
 
 defineProps<{
@@ -32,5 +33,8 @@ const emit = defineEmits<{
 
     <!-- Import -->
     <import-button />
+
+    <!-- Export -->
+    <export-button />
   </v-card>
 </template>

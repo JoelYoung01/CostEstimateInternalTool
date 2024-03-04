@@ -1,6 +1,9 @@
 export interface DrawnArea {
   id: number;
-  polygon: google.maps.Polygon;
+
+  /** An array of the area's paths, used to import/export polygon data*/
+  paths: { lat: number; lng: number }[][];
+
   area: number;
   type: "Sod" | "Powerwash";
   comments?: string;
