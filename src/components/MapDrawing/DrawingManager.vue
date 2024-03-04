@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ImportButton from "./Controls/ImportButton.vue";
+
 defineProps<{
   totalArea: number;
   disabledClearAll: boolean;
@@ -20,12 +22,15 @@ const emit = defineEmits<{
 
     <v-btn variant="text" icon @click="emit('center-on-user')">
       <v-icon icon="mdi-crosshairs-gps" />
-      <v-tooltip activator="parent" location="bottom"> Center map on me </v-tooltip>
+      <v-tooltip activator="parent" location="top"> Center map on me </v-tooltip>
     </v-btn>
 
     <v-btn :disabled="disabledClearAll" variant="text" icon @click="emit('clear-all-polygons')">
       <v-icon icon="mdi-layers-remove" />
-      <v-tooltip activator="parent" location="bottom"> Clear all areas </v-tooltip>
+      <v-tooltip activator="parent" location="top"> Clear all areas </v-tooltip>
     </v-btn>
+
+    <!-- Import -->
+    <import-button />
   </v-card>
 </template>
