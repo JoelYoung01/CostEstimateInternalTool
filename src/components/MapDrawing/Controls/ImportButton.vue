@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { inject, ref, watch } from "vue";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
-import type { DataPackage } from "@/types";
+import { ref, watch } from "vue";
+import { useDataPackageStore } from "@/stores/dataPackage";
 
-const dataPackage = inject(DataPackageInjectionKey, ref<DataPackage>(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 
 const menuIsVisible = ref(false);
 const encodedData = ref("");
@@ -16,21 +15,12 @@ const showCheckMark = ref(false);
 async function importData() {
   importErrors.value = [];
   try {
-    // decode the data
-    const data = JSON.parse(atob(encodedData.value));
+    dataPackageStore.importFromEncodedString(encodedData.value);
 
-    // verify the data
-    const issues = verifyIsDataPackage(data);
-
-    // if there are issues, log them and return
-    if (typeof issues !== "undefined") {
-      console.error(issues);
-      importErrors.value.push(...issues);
+    if (dataPackageStore.importErrors.length) {
+      importErrors.value = [...dataPackageStore.importErrors];
       return;
     }
-
-    // set the data
-    dataPackage.value = data;
 
     // animate the check mark
     await animateCheckMark();
@@ -39,58 +29,6 @@ async function importData() {
     importErrors.value.push("Invalid Data Package; unable to parse data.");
     console.error(e);
     return;
-  }
-}
-
-/**
- * Verify that the data is a valid data package
- *
- * @param data Data to verify
- *
- * @returns `undefined` if the data is valid, otherwise a string describing the error
- */
-function verifyIsDataPackage(data: any): undefined | string[] {
-  if (!data) {
-    return ["Invalid data package; missing data"];
-  }
-
-  if (!Array.isArray(data.drawnAreas) || !data.drawnAreas.length) {
-    return ["Invalid data package; missing or corrupt drawnAreas"];
-  }
-
-  const polygonIssues: string[] = [];
-  for (const area of data.drawnAreas) {
-    if (typeof area.id !== "number") {
-      polygonIssues.push(`Invalid data package; missing or corrupt id in polygon ${area.id}`);
-    }
-
-    if (typeof area.area !== "number") {
-      polygonIssues.push(`Invalid data package; missing or corrupt area in polygon ${area.id}`);
-    }
-
-    if (!Array.isArray(area.paths) || !area.paths.length) {
-      polygonIssues.push(`Invalid data package; missing or corrupt polygon object in polygon ${area.id}`);
-    } else {
-      for (const path of area.paths) {
-        if (!Array.isArray(path) || !path.length) {
-          polygonIssues.push(`Invalid data package; missing or corrupt path in polygon ${area.id}`);
-        } else {
-          for (const latLng of path) {
-            if (typeof latLng.lat !== "number" || typeof latLng.lng !== "number") {
-              polygonIssues.push(`Invalid data package; missing or corrupt lat/lng in polygon ${area.id}`);
-            }
-          }
-        }
-      }
-    }
-
-    if (area.type !== "Sod" && area.type !== "Powerwash") {
-      polygonIssues.push(`Invalid data package; invalid type in polygon ${area.id} (${area.type})`);
-    }
-  }
-
-  if (polygonIssues.length) {
-    return polygonIssues;
   }
 }
 

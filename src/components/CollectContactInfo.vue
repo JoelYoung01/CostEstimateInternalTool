@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useDisplay } from "vuetify";
-import { inject } from "vue";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 import { useUtilities } from "@/composables";
+import { useDataPackageStore } from "@/stores/dataPackage";
 
 // Hide the completion date picker for now, until we integrate with the heatmap calendar idea
 const showCompletionDatePicker = false;
@@ -13,7 +12,7 @@ const emit = defineEmits<{
   back: [];
 }>();
 
-const dataPackage = inject(DataPackageInjectionKey, ref(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 
 const { mobile } = useDisplay();
 
@@ -34,7 +33,7 @@ const { daysFromToday } = useUtilities();
 
     <v-form v-model="validForm">
       <v-text-field
-        v-model="dataPackage.name"
+        v-model="dataPackageStore.dataPackage.name"
         prepend-icon="mdi-account"
         label="Name"
         variant="outlined"
@@ -42,7 +41,7 @@ const { daysFromToday } = useUtilities();
         :rules="[required]"
       />
       <v-text-field
-        v-model="dataPackage.email"
+        v-model="dataPackageStore.dataPackage.email"
         prepend-icon="mdi-email"
         validate-on="blur"
         label="Email"
@@ -52,7 +51,7 @@ const { daysFromToday } = useUtilities();
         :rules="[required, isEmail]"
       />
       <v-text-field
-        v-model="dataPackage.phone"
+        v-model="dataPackageStore.dataPackage.phone"
         prepend-icon="mdi-phone"
         label="Phone"
         variant="outlined"
@@ -61,7 +60,7 @@ const { daysFromToday } = useUtilities();
       />
       <v-text-field
         v-if="showCompletionDatePicker"
-        :modelValue="dataPackage.desiredCompleteDate.toDateString()"
+        :modelValue="dataPackageStore.dataPackage.desiredCompleteDate?.toDateString()"
         readonly
         prepend-icon="mdi-calendar-month-outline"
         label="Desired Completion Date"
@@ -71,7 +70,7 @@ const { daysFromToday } = useUtilities();
       >
         <v-menu v-model="showDatePicker" activator="parent" :close-on-content-click="false">
           <v-date-picker
-            v-model="dataPackage.desiredCompleteDate"
+            v-model="dataPackageStore.dataPackage.desiredCompleteDate"
             :min="new Date()"
             landscape
             @update:modelValue="showDatePicker = false"
@@ -80,9 +79,12 @@ const { daysFromToday } = useUtilities();
 
         <template #append-inner>
           <span style="font-size: 12px; white-space: nowrap">
-            In {{ daysFromToday(dataPackage.desiredCompleteDate) }} day{{
-              daysFromToday(dataPackage.desiredCompleteDate) === 1 ? "" : "s"
-            }}
+            <template v-if="!dataPackageStore.dataPackage.desiredCompleteDate"> Select a date </template>
+            <template v-else>
+              In {{ daysFromToday(dataPackageStore.dataPackage.desiredCompleteDate) }} day{{
+                daysFromToday(dataPackageStore.dataPackage.desiredCompleteDate) === 1 ? "" : "s"
+              }}
+            </template>
           </span>
         </template>
       </v-text-field>

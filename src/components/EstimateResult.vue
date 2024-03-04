@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUtilities } from "@/composables";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
-import { computed, inject, ref } from "vue";
+import { useDataPackageStore } from "@/stores/dataPackage";
+import { computed } from "vue";
 import { useDisplay } from "vuetify";
 
 const emit = defineEmits<{
@@ -12,10 +12,10 @@ const emit = defineEmits<{
 const { mobile } = useDisplay();
 const { daysFromToday } = useUtilities();
 
-const dataPackage = inject(DataPackageInjectionKey, ref(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 
 const totalArea = computed(() => {
-  return dataPackage.value.drawnAreas.reduce((acc, cur) => acc + cur.area, 0) ?? 0;
+  return dataPackageStore.dataPackage.drawnAreas.reduce((acc, cur) => acc + cur.area, 0) ?? 0;
 });
 
 const pricePerSquareFoot = 3.5;
@@ -26,7 +26,7 @@ const stairsFee = 100;
 
 const estimate = computed(() => {
   const basePrice = totalArea.value * pricePerSquareFoot;
-  const fees = dataPackage.value.drawnAreas.reduce((acc, cur) => {
+  const fees = dataPackageStore.dataPackage.drawnAreas.reduce((acc, cur) => {
     if (cur.fencedInYard) acc += fenceFee;
     if (!cur.accessibleFromStreet) acc += inaccessibleFee;
     if (cur.stairsToAccess) acc += stairsFee;
@@ -34,7 +34,10 @@ const estimate = computed(() => {
   }, 0);
 
   const basePriceWithFees = basePrice + fees;
-  const daysPrice = Math.min(30 - daysFromToday(dataPackage.value.desiredCompleteDate), 0) * pricePerFastDay;
+  const daysFromTodayOrDefault = dataPackageStore.dataPackage.desiredCompleteDate
+    ? daysFromToday(dataPackageStore.dataPackage.desiredCompleteDate)
+    : 30;
+  const daysPrice = Math.min(30 - daysFromTodayOrDefault, 0) * pricePerFastDay;
   return Math.round((basePriceWithFees + daysPrice) / 100) * 100 + 150;
 });
 </script>

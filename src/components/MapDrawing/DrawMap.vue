@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /// <reference types="google.maps" />
-import { ref, onMounted, onBeforeUnmount, toRaw, inject, computed, reactive } from "vue";
+import { ref, onMounted, onBeforeUnmount, toRaw, computed, reactive } from "vue";
 import { CustomControl, GoogleMap } from "vue3-google-map";
 import GetComment from "../GetComment.vue";
 import DrawingManager from "./DrawingManager.vue";
 import PlaceSelector from "./PlaceSelector.vue";
 import CompassControl from "./CompassControl.vue";
-import type { DataPackage, DrawnArea } from "@/types";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
+import type { DrawnArea } from "@/types";
 import { useTheme } from "vuetify";
 import DrawingStats from "./DrawingStats.vue";
+import { useDataPackageStore } from "@/stores/dataPackage";
 
 interface Props {
   error?: string;
@@ -28,13 +28,13 @@ const selectedMode = ref<"cursor" | "draw">("cursor");
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
 const drawingManager = ref<google.maps.drawing.DrawingManager>();
-const dataPackage = inject(DataPackageInjectionKey, ref<DataPackage>(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 
 const totalArea = computed(() => {
-  return dataPackage.value.drawnAreas.reduce((acc, cur) => acc + cur.area, 0) ?? 0;
+  return dataPackageStore.dataPackage.drawnAreas.reduce((acc, cur) => acc + cur.area, 0) ?? 0;
 });
 const polygonCount = computed(() => {
-  return dataPackage.value.drawnAreas.length ?? 0;
+  return dataPackageStore.dataPackage.drawnAreas.length ?? 0;
 });
 
 const centerOnUser = () => {
@@ -103,16 +103,16 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
     }
   });
 
-  dataPackage.value.drawnAreas.push(newDrawnArea);
+  dataPackageStore.dataPackage.drawnAreas.push(newDrawnArea);
 };
 
 const removePolygon = (id: number) => {
   toRaw(polygons.value[id]).setMap(null);
-  dataPackage.value.drawnAreas = dataPackage.value.drawnAreas.filter((p) => p.id !== id);
+  dataPackageStore.dataPackage.drawnAreas = dataPackageStore.dataPackage.drawnAreas.filter((p) => p.id !== id);
 };
 
 const clearAllPolygons = () => {
-  dataPackage.value.drawnAreas = [];
+  dataPackageStore.dataPackage.drawnAreas = [];
   polygons.value.forEach((p) => p.setMap(null));
   polygons.value = [];
 };
@@ -160,10 +160,10 @@ function setMode(mode: "cursor" | "draw") {
 
   if (mode === "cursor") {
     drawingManager.value.setDrawingMode(null);
-    // dataPackage.value.drawnAreas.forEach((p) => p.polygon.setOptions(editablePolygon));
+    // dataPackageStore.dataPackage.drawnAreas.forEach((p) => p.polygon.setOptions(editablePolygon));
   } else {
     drawingManager.value.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    // dataPackage.value.drawnAreas.forEach((p) => p.polygon.setOptions(staticPolygon));
+    // dataPackageStore.dataPackage.drawnAreas.forEach((p) => p.polygon.setOptions(staticPolygon));
   }
 }
 

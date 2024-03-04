@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import MapWidgetRoot from "./MapDrawing/MapWidgetRoot.vue";
-import { inject, ref } from "vue";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
+import { useDataPackageStore } from "@/stores/dataPackage";
 
-const dataPackage = inject(DataPackageInjectionKey, ref(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 
 const emit = defineEmits(["confirm", "back"]);
 </script>
@@ -20,7 +19,7 @@ const emit = defineEmits(["confirm", "back"]);
         color="primary"
         class="px-4"
         rounded
-        :disabled="dataPackage.drawnAreas.length === 0"
+        :disabled="dataPackageStore.dataPackage.drawnAreas.length === 0"
         slim
         @click="emit('confirm')"
       >

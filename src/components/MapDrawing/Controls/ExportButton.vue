@@ -1,22 +1,31 @@
 <script setup lang="ts">
-import { inject, ref, computed } from "vue";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
-import type { DataPackage } from "@/types";
+import { ref, computed } from "vue";
+import { useDataPackageStore } from "@/stores/dataPackage";
 
-const dataPackage = inject(DataPackageInjectionKey, ref<DataPackage>(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 
 const showCheckMark = ref(false);
 
 /** Whether to disable the button */
-const disableButton = computed(() => showCheckMark.value || !dataPackage.value.drawnAreas.length);
+const disableButton = computed(() => showCheckMark.value || !dataPackageStore.dataPackage.drawnAreas.length);
 
 /**
  * Export the data to the clipboard
  */
 async function exportDataToClipboard() {
   try {
-    const stringifiedData = JSON.stringify(dataPackage.value);
-    const encodedData = btoa(stringifiedData);
+    const encodedData = dataPackageStore.exportToEncodedString();
+
+    if (!encodedData) {
+      console.error("No data to export");
+      return;
+    }
+
+    if (dataPackageStore.exportErrors.length) {
+      console.error("Errors exporting data", dataPackageStore.exportErrors);
+      return;
+    }
+
     navigator.clipboard.writeText(encodedData);
     animateCheckMark();
   } catch (e) {

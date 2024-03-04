@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
-import { inject } from "vue";
-import { ref } from "vue";
+import { useDataPackageStore } from "@/stores/dataPackage";
 
-const dataPackage = inject(DataPackageInjectionKey, ref(DefaultDataPackage));
+const dataPackageStore = useDataPackageStore();
 </script>
 
 <template>
@@ -12,7 +10,7 @@ const dataPackage = inject(DataPackageInjectionKey, ref(DefaultDataPackage));
       <v-card-title>Drawn Stats</v-card-title>
 
       <v-expansion-panels>
-        <v-expansion-panel v-for="area in dataPackage.drawnAreas" :key="area.area">
+        <v-expansion-panel v-for="area in dataPackageStore.dataPackage.drawnAreas" :key="area.area">
           <v-expansion-panel-title>
             {{ area.id }}: {{ area.type ?? "Sod" }} - {{ Math.round(area.area).toLocaleString() }} SQFT
           </v-expansion-panel-title>
