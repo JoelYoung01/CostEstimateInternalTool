@@ -22,7 +22,7 @@ const sodSmith: google.maps.LatLngLiteral = { lat: 44.886297901877114, lng: -93.
 const zoom = ref(17);
 const mapRef = ref<InstanceType<typeof GoogleMap>>();
 const commentGetter = ref<InstanceType<typeof GetComment>>();
-const polygons = ref<google.maps.Polygon[]>([]);
+const polygons = ref<(google.maps.Polygon | undefined)[]>([]);
 const selectedMode = ref<"cursor" | "draw">("cursor");
 
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -70,6 +70,49 @@ const pathsFromPolygon = (polygon: google.maps.Polygon) => {
     .map((path) => path.getArray().map((latLng) => ({ lat: latLng.lat(), lng: latLng.lng() })));
 };
 
+/**
+ * Load polygons from the data package (resets all polygons)
+ */
+const loadPolygonsFromDataPackage = () => {
+  const maxPolygonId = dataPackageStore.dataPackage.drawnAreas.reduce((acc, cur) => Math.max(acc, cur.id), 0);
+  polygons.value = [];
+  polygons.value.fill(undefined, 0, maxPolygonId + 1);
+
+  dataPackageStore.dataPackage.drawnAreas.forEach((area) => {
+    const newPolygon = new google.maps.Polygon({
+      paths: area.paths[0]?.map((path) => new google.maps.LatLng(path.lat, path.lng)),
+      fillColor: currentTheme.value.colors.secondary,
+      strokeColor: "black",
+      fillOpacity: 0.33,
+      strokeOpacity: 1,
+      strokeWeight: 3,
+      visible: true,
+      zIndex: 1
+    });
+
+    newPolygon.setMap(mapRef.value?.map ?? null);
+
+    newPolygon.addListener("contextmenu", () => {
+      removePolygon(area.id);
+    });
+
+    newPolygon.addListener("dblclick", () => {
+      removePolygon(area.id);
+    });
+
+    newPolygon.addListener("mouseup", (polyEvent: google.maps.PolyMouseEvent) => {
+      if (typeof polyEvent.edge !== "undefined" || typeof polyEvent.vertex !== "undefined") {
+        area.area = google.maps.geometry.spherical.computeArea(newPolygon.getPath(), 2.093e7);
+        area.paths = pathsFromPolygon(newPolygon);
+      }
+    });
+  });
+};
+
+/**
+ * Handle a new polygon being created
+ * @param newPolygon New polygon being created
+ */
 const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
   if (typeof commentGetter.value === "undefined") newPolygon.setMap(null);
 
@@ -106,17 +149,30 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
   dataPackageStore.dataPackage.drawnAreas.push(newDrawnArea);
 };
 
+/**
+ * Remove a polygon from the map
+ * @param id id of the polygon to remove
+ */
 const removePolygon = (id: number) => {
-  toRaw(polygons.value[id]).setMap(null);
+  const polygon = polygons.value[id];
+  if (typeof polygon === "undefined") return;
+
+  toRaw(polygon).setMap(null);
   dataPackageStore.dataPackage.drawnAreas = dataPackageStore.dataPackage.drawnAreas.filter((p) => p.id !== id);
 };
 
+/**
+ * Clear all polygons from the map
+ */
 const clearAllPolygons = () => {
   dataPackageStore.dataPackage.drawnAreas = [];
-  polygons.value.forEach((p) => p.setMap(null));
+  polygons.value.forEach((p) => p?.setMap(null));
   polygons.value = [];
 };
 
+/**
+ * Initialize the map
+ */
 const initMap = async () => {
   if (drawingManager.value) return;
 
@@ -155,6 +211,10 @@ const initMap = async () => {
   drawingManager.value.setMap(mapRef.value.map);
 };
 
+/**
+ * Set the mode of the drawing manager
+ * @param mode The mode to update to
+ */
 function setMode(mode: "cursor" | "draw") {
   if (!drawingManager.value) return;
 
@@ -169,6 +229,9 @@ function setMode(mode: "cursor" | "draw") {
 
 onMounted(() => {
   initMap();
+
+  // Load polygons from the data package when the data package gets imported
+  dataPackageStore.eventTarget.addEventListener("imported", loadPolygonsFromDataPackage);
 });
 
 onBeforeUnmount(() => {
@@ -178,6 +241,8 @@ onBeforeUnmount(() => {
     drawingManager.value.setMap(null);
     drawingManager.value = undefined;
   }
+
+  dataPackageStore.eventTarget.removeEventListener("imported", loadPolygonsFromDataPackage);
 });
 </script>
 

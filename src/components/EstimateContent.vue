@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { DataPackage } from "@/types";
 import StartPage from "./StartPage.vue";
 import DrawTool from "./DrawTool.vue";
 import CollectContactInfo from "./CollectContactInfo.vue";
@@ -8,8 +7,6 @@ import EstimateResult from "./EstimateResult.vue";
 import SendVideo from "./SendVideo.vue";
 import DonePage from "./DonePage.vue";
 import { useDisplay } from "vuetify";
-import { provide } from "vue";
-import { DataPackageInjectionKey, DefaultDataPackage } from "@/injections";
 
 const { mobile } = useDisplay();
 
@@ -18,9 +15,6 @@ const defaultStage: Stage = "Start";
 
 const emit = defineEmits<{ close: [] }>();
 const currentStage = ref<Stage>(defaultStage);
-
-const dataPackage = ref<DataPackage>(DefaultDataPackage);
-provide(DataPackageInjectionKey, dataPackage);
 
 const exit = () => {
   currentStage.value = defaultStage;
