@@ -5,5 +5,7 @@ export interface DataPackage {
   email?: string;
   phone?: string;
   desiredCompleteDate?: Date;
+  mapCenter?: { lat: number; lng: number };
+  mapZoom?: number;
   drawnAreas: DrawnArea[];
 }

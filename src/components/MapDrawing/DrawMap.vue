@@ -208,6 +208,37 @@ const clearAllPolygons = () => {
 };
 
 /**
+ * Update the center of the map in the data package
+ */
+const onCenterChange = (newCenter?: { lat: number; lng: number }) => {
+  const currentCenter = mapRef.value?.map?.getCenter();
+
+  if (!currentCenter && !newCenter) return;
+
+  dataPackageStore.dataPackage.mapCenter = {
+    lat: newCenter?.lat ?? currentCenter?.lat() ?? sodSmith.lat,
+    lng: newCenter?.lng ?? currentCenter?.lng() ?? sodSmith.lng
+  };
+};
+
+/*
+ * Update the zoom of the map in the data package
+ */
+const onZoomChange = (newZoom?: number) => {
+  const currentZoom = mapRef.value?.map?.getZoom();
+
+  if (typeof currentZoom === "undefined" && typeof newZoom === "undefined") return;
+
+  dataPackageStore.dataPackage.mapZoom = currentZoom ?? newZoom ?? 17;
+};
+
+const onDataImport = () => {
+  loadPolygonsFromDataPackage();
+  mapRef.value?.map?.setCenter(dataPackageStore.dataPackage.mapCenter ?? sodSmith);
+  mapRef.value?.map?.setZoom(dataPackageStore.dataPackage.mapZoom ?? 17);
+};
+
+/**
  * Initialize the map
  */
 const initMap = async () => {
@@ -231,6 +262,8 @@ const initMap = async () => {
   drawingManager.value = new google.maps.drawing.DrawingManager(drawOptions);
 
   google.maps.event.addListener(drawingManager.value, "polygoncomplete", handleNewPolygon);
+  mapRef.value.map.addListener("bounds_changed", onCenterChange);
+  mapRef.value.map.addListener("zoom_changed", onZoomChange);
 
   drawingManager.value.setMap(mapRef.value.map);
 
@@ -261,10 +294,8 @@ function setMode(mode: "cursor" | "draw") {
 }
 
 onMounted(() => {
+  dataPackageStore.eventTarget.addEventListener("imported", onDataImport);
   initMap();
-
-  // Load polygons from the data package when the data package gets imported
-  dataPackageStore.eventTarget.addEventListener("imported", loadPolygonsFromDataPackage);
 });
 
 onBeforeUnmount(() => {
@@ -275,7 +306,7 @@ onBeforeUnmount(() => {
     drawingManager.value = undefined;
   }
 
-  dataPackageStore.eventTarget.removeEventListener("imported", loadPolygonsFromDataPackage);
+  dataPackageStore.eventTarget.removeEventListener("imported", onDataImport);
 });
 </script>
 
