@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /// <reference types="google.maps" />
 import { ref, onMounted, onBeforeUnmount, toRaw, computed, reactive } from "vue";
-import { CustomControl, GoogleMap } from "vue3-google-map";
+import { CustomControl, GoogleMap, Marker } from "vue3-google-map";
 import GetComment from "../GetComment.vue";
 import DrawingManager from "./DrawingManager.vue";
 import PlaceSelector from "./PlaceSelector.vue";
@@ -54,6 +54,21 @@ const totalArea = computed(() => {
 });
 const polygonCount = computed(() => {
   return dataPackageStore.dataPackage.drawnAreas.length ?? 0;
+});
+
+const polygonMarkers = computed(() => {
+  return dataPackageStore.dataPackage.drawnAreas.map((area) => {
+    const bounds = new google.maps.LatLngBounds();
+    area.paths[0].forEach((point) => {
+      bounds.extend(point);
+    });
+    const center = bounds.getCenter();
+
+    return {
+      position: center,
+      label: area.id.toString()
+    };
+  });
 });
 
 const centerOnUser = () => {
@@ -188,7 +203,7 @@ const removePolygon = (id: number) => {
  */
 const clearAllPolygons = () => {
   dataPackageStore.dataPackage.drawnAreas = [];
-  polygons.value.forEach((p) => p?.setMap(null));
+  polygons.value.forEach((p) => typeof p === "undefined" || toRaw(p).setMap(null));
   polygons.value = [];
 };
 
@@ -283,6 +298,8 @@ onBeforeUnmount(() => {
     disable-default-ui
     @dblclick.stop
   >
+    <Marker v-for="marker in polygonMarkers" :key="marker.label" :options="marker" />
+
     <CustomControl position="TOP_CENTER" class="ma-1">
       <PlaceSelector :disabled="!!error" @place-selected="centerOnPlace" />
     </CustomControl>
