@@ -19,19 +19,28 @@ const dataPackageStore = useDataPackageStore();
               <v-row dense>
                 <v-col cols="6" md="6"> Area </v-col>
                 <v-col cols="6" md="6"> {{ Math.round(area.area).toLocaleString() }} SQFT </v-col>
+
                 <v-col cols="6" md="6"> Comments </v-col>
                 <v-col cols="6" md="6">
                   <template v-if="area.comments">{{ area.comments }}</template>
                   <span v-else class="font-italic">None</span>
                 </v-col>
+
+                <v-col cols="6" md="6"> Sodding Location{{ area.location?.length !== 1 ? "s" : "" }} </v-col>
+                <v-col cols="6" md="6">
+                  {{ area.location?.join(", ") }}
+                </v-col>
+
                 <v-col cols="6" md="6"> Fenced in Yard? </v-col>
                 <v-col cols="6" md="6">
                   {{ area.fencedInYard ? "Yes" : "No" }}
                 </v-col>
+
                 <v-col cols="6" md="6"> Accessible From Street? </v-col>
                 <v-col cols="6" md="6">
                   {{ area.accessibleFromStreet ? "Yes" : "No" }}
                 </v-col>
+
                 <v-col cols="6" md="6"> Stairs to access? </v-col>
                 <v-col cols="6" md="6">
                   {{ area.stairsToAccess ? "Yes" : "No" }}

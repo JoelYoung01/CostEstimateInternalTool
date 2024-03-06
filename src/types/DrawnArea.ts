@@ -7,7 +7,12 @@ export interface DrawnArea {
   area: number;
   type: "Sod" | "Powerwash";
   comments?: string;
+
   fencedInYard?: boolean;
   accessibleFromStreet?: boolean;
   stairsToAccess?: boolean;
+
+  location?: SodLocationType[];
 }
+
+export type SodLocationType = "Back Yard" | "Front Yard" | "Side Yard" | "Other";

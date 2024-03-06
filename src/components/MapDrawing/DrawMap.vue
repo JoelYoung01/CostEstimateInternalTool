@@ -135,9 +135,10 @@ const loadPolygonsFromDataPackage = () => {
 const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
   if (typeof commentGetter.value === "undefined") newPolygon.setMap(null);
 
-  const { comments, fencedInYard, accessibleFromStreet, stairsToAccess } = await commentGetter.value!.getComment();
+  const { comments, fencedInYard, accessibleFromStreet, stairsToAccess, location } =
+    await commentGetter.value!.getComment();
 
-  const polygonId = polygons.value.length + 1;
+  const polygonId = Math.max(polygons.value.length, 1);
 
   const newDrawnArea = reactive<DrawnArea>({
     id: polygonId,
@@ -147,7 +148,8 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
     comments,
     fencedInYard,
     accessibleFromStreet,
-    stairsToAccess
+    stairsToAccess,
+    location
   });
 
   newPolygon.addListener("contextmenu", () => {
