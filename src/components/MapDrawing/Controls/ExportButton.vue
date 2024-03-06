@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useDataPackageStore } from "@/stores/dataPackage";
+import { useRoute } from "vue-router";
 
 interface Props {
   mode?: "link" | "data";
@@ -11,6 +12,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const dataPackageStore = useDataPackageStore();
+
+const route = useRoute();
 
 const showCheckMark = ref(false);
 
@@ -63,8 +66,9 @@ function exportDataAsLinkToClipboard() {
       return;
     }
 
+    // Create url using hash history mode
     const url = new URL(window.location.href);
-    url.searchParams.set("data", encodedData);
+    url.hash = `#${route.fullPath}?data=${encodedData}`;
     navigator.clipboard.writeText(url.toString());
     animateCheckMark();
   } catch (e) {

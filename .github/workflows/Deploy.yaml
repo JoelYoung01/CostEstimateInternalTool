@@ -22,6 +22,9 @@ on:
         description: 'S3 Bucket'
         required: true
 
+env:
+  APP_NAME: internal-tool
+
 jobs:
   DeployToS3:
     runs-on: ubuntu-latest
@@ -47,7 +50,7 @@ jobs:
       - name: Build project
         env:
           VITE_GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          BASE_URL: /internal-tool/
+          BASE_URL: /${{ env.APP_NAME }}/
         run: pnpm build
 
       - name: Configure AWS credentials
@@ -56,6 +59,8 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
-
+      
       - name: Upload to S3
-        run: aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }}/internal-tool --delete
+        run: |
+          aws s3 sync ./dist s3://${{ secrets.S3_BUCKET }}/${{ env.APP_NAME }} --delete
+          aws s3 cp ./dist/index.html s3://${{ secrets.S3_BUCKET }}/${{ env.APP_NAME }}/index.html --cache-control 'public,max-age=60,stale-while-revalidate=2592000'
