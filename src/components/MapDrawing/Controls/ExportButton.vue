@@ -2,6 +2,14 @@
 import { ref, computed } from "vue";
 import { useDataPackageStore } from "@/stores/dataPackage";
 
+interface Props {
+  mode?: "link" | "data";
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  mode: "link"
+});
+
 const dataPackageStore = useDataPackageStore();
 
 const showCheckMark = ref(false);
@@ -9,10 +17,15 @@ const showCheckMark = ref(false);
 /** Whether to disable the button */
 const disableButton = computed(() => showCheckMark.value || !dataPackageStore.dataPackage.drawnAreas.length);
 
+/** The tooltip text */
+const tooltipText = computed(() =>
+  props.mode === "link" ? "Export Data as Link to clipboard" : "Export Data to clipboard"
+);
+
 /**
  * Export the data to the clipboard
  */
-async function exportDataToClipboard() {
+function exportDataToClipboard() {
   try {
     const encodedData = dataPackageStore.exportToEncodedString();
 
@@ -34,6 +47,40 @@ async function exportDataToClipboard() {
 }
 
 /**
+ * Export the data as a link to the clipboard
+ */
+function exportDataAsLinkToClipboard() {
+  try {
+    const encodedData = dataPackageStore.exportToEncodedString();
+
+    if (!encodedData) {
+      console.error("No data to export");
+      return;
+    }
+
+    if (dataPackageStore.exportErrors.length) {
+      console.error("Errors exporting data", dataPackageStore.exportErrors);
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("data", encodedData);
+    navigator.clipboard.writeText(url.toString());
+    animateCheckMark();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function onClick() {
+  if (props.mode === "link") {
+    exportDataAsLinkToClipboard();
+  } else {
+    exportDataToClipboard();
+  }
+}
+
+/**
  * Animate the check mark
  */
 async function animateCheckMark() {
@@ -44,16 +91,12 @@ async function animateCheckMark() {
 </script>
 
 <template>
-  <v-btn
-    variant="text"
-    icon
-    @click="exportDataToClipboard()"
-    :disabled="disableButton"
-    :color="showCheckMark ? 'success' : ''"
-  >
-    <v-icon v-if="showCheckMark">mdi-check</v-icon>
-    <v-icon v-else>mdi-export</v-icon>
+  <v-btn variant="text" icon @click="onClick" :disabled="disableButton">
+    <v-fab-transition absolute-on-leave>
+      <v-icon v-if="showCheckMark">mdi-check</v-icon>
+      <v-icon v-else>mdi-export</v-icon>
+    </v-fab-transition>
 
-    <v-tooltip activator="parent" location="top">Export Data to clipboard</v-tooltip>
+    <v-tooltip activator="parent" location="top">{{ tooltipText }}</v-tooltip>
   </v-btn>
 </template>

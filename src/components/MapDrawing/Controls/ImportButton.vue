@@ -15,6 +15,10 @@ const showCheckMark = ref(false);
 async function importData() {
   importErrors.value = [];
   try {
+    if (encodedData.value.includes("data=")) {
+      encodedData.value = encodedData.value.split("data=")[1];
+    }
+
     dataPackageStore.importFromEncodedString(encodedData.value);
 
     if (dataPackageStore.importErrors.length) {

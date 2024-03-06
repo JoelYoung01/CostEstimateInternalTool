@@ -10,20 +10,39 @@ import type { DrawnArea } from "@/types";
 import { useTheme } from "vuetify";
 import DrawingStats from "./DrawingStats.vue";
 import { useDataPackageStore } from "@/stores/dataPackage";
+import { useRoute, useRouter } from "vue-router";
 
 interface Props {
   error?: string;
 }
 defineProps<Props>();
+
 const { current: currentTheme } = useTheme();
+const route = useRoute();
+const router = useRouter();
 
 const sodSmith: google.maps.LatLngLiteral = { lat: 44.886297901877114, lng: -93.30808521796632 };
+
+const basePolygonConfig: google.maps.PolygonOptions = {
+  clickable: true,
+  editable: true,
+  draggable: false,
+  fillColor: currentTheme.value.colors.secondary,
+  strokeColor: "black",
+  fillOpacity: 0.33,
+  geodesic: false,
+  strokeOpacity: 1,
+  strokePosition: 0,
+  strokeWeight: 3,
+  visible: true,
+  zIndex: 1
+};
 
 const zoom = ref(17);
 const mapRef = ref<InstanceType<typeof GoogleMap>>();
 const commentGetter = ref<InstanceType<typeof GetComment>>();
 const polygons = ref<(google.maps.Polygon | undefined)[]>([]);
-const selectedMode = ref<"cursor" | "draw">("cursor");
+const selectedMode = ref<"cursor" | "draw">("draw");
 
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -75,19 +94,17 @@ const pathsFromPolygon = (polygon: google.maps.Polygon) => {
  */
 const loadPolygonsFromDataPackage = () => {
   const maxPolygonId = dataPackageStore.dataPackage.drawnAreas.reduce((acc, cur) => Math.max(acc, cur.id), 0);
+  polygons.value.forEach((p) => {
+    toRaw(p)?.setMap(null);
+    console.debug("Removing polygon from map", p);
+  });
   polygons.value = [];
   polygons.value.fill(undefined, 0, maxPolygonId + 1);
 
   dataPackageStore.dataPackage.drawnAreas.forEach((area) => {
     const newPolygon = new google.maps.Polygon({
       paths: area.paths[0]?.map((path) => new google.maps.LatLng(path.lat, path.lng)),
-      fillColor: currentTheme.value.colors.secondary,
-      strokeColor: "black",
-      fillOpacity: 0.33,
-      strokeOpacity: 1,
-      strokeWeight: 3,
-      visible: true,
-      zIndex: 1
+      ...basePolygonConfig
     });
 
     newPolygon.setMap(mapRef.value?.map ?? null);
@@ -106,6 +123,8 @@ const loadPolygonsFromDataPackage = () => {
         area.paths = pathsFromPolygon(newPolygon);
       }
     });
+
+    polygons.value[area.id] = newPolygon;
   });
 };
 
@@ -146,6 +165,7 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
     }
   });
 
+  polygons.value[polygonId] = newPolygon;
   dataPackageStore.dataPackage.drawnAreas.push(newDrawnArea);
 };
 
@@ -188,20 +208,7 @@ const initMap = async () => {
       position: google.maps.ControlPosition.TOP_CENTER,
       drawingModes: [google.maps.drawing.OverlayType.POLYGON]
     },
-    polygonOptions: {
-      clickable: true,
-      editable: true,
-      draggable: false,
-      fillColor: currentTheme.value.colors.secondary,
-      strokeColor: "black",
-      fillOpacity: 0.33,
-      geodesic: false,
-      strokeOpacity: 1,
-      strokePosition: google.maps.StrokePosition.CENTER,
-      strokeWeight: 3,
-      visible: true,
-      zIndex: 1
-    }
+    polygonOptions: { ...basePolygonConfig }
   };
 
   drawingManager.value = new google.maps.drawing.DrawingManager(drawOptions);
@@ -209,6 +216,15 @@ const initMap = async () => {
   google.maps.event.addListener(drawingManager.value, "polygoncomplete", handleNewPolygon);
 
   drawingManager.value.setMap(mapRef.value.map);
+
+  // Attempt to pull the data from the route
+  if (typeof route.query.data !== "undefined") {
+    // If there was data, import it
+    dataPackageStore.importFromEncodedString(route.query.data as string);
+
+    // Clear the 'data' query param from the route
+    router.replace({ query: { ...route.query, data: undefined } });
+  }
 };
 
 /**
