@@ -77,7 +77,8 @@ const allMarkers = computed(() => {
 
   if (showUserMarker.value && userLocation.value) {
     allMarkers.push({
-      position: userLocation.value
+      position: new google.maps.LatLng(userLocation.value),
+      label: ""
     });
   }
 
