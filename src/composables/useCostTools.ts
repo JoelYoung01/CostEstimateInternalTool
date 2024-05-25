@@ -1,5 +1,10 @@
 interface CostToolComposable {
   /**
+   * List of project tiers.
+   */
+  tierList: ProjectTier[];
+
+  /**
    * @param squareFootage The square footage of the project.
    * @returns the project Tier based on the square footage of the project.
    */
@@ -67,6 +72,7 @@ export function useCostTools(): CostToolComposable {
   };
 
   return {
+    tierList,
     getProjectTier,
     getProjectCost
   };
