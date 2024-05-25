@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useDataPackageStore } from "@/stores/dataPackage";
-import { useCostTools } from "@/composables/useCostTools";
+import { useCostTools, useUtilities } from "@/composables";
 
 const dataPackageStore = useDataPackageStore();
 const { getProjectTier, getProjectCost } = useCostTools();
+const { formatCurrency } = useUtilities();
 
 const typeRatio = ref(0);
 
@@ -18,15 +19,15 @@ const costBreakdown = computed(() => getProjectCost(kbgArea.value, stArea.value)
   <div class="d-flex justify-center mb-4">
     <v-chip class="mx-2"> {{ getProjectTier(totalArea)?.name ?? "Unknown" }} </v-chip>
     <v-chip class="mx-2">
-      KBG: {{ kbgArea }} ft²
-      <span v-if="costBreakdown.kbgCost > 0" class="ms-1">(${{ Math.round(costBreakdown.kbgCost) }})</span>
+      KBG: {{ kbgArea.toLocaleString() }} ft²
+      <span v-if="costBreakdown.kbgCost > 0" class="ms-1">({{ formatCurrency(costBreakdown.kbgCost) }})</span>
     </v-chip>
     <v-chip class="mx-2">
-      ST: {{ stArea }} ft²
-      <span v-if="costBreakdown.stCost > 0" class="ms-1">(${{ Math.round(costBreakdown.stCost) }})</span>
+      ST: {{ stArea.toLocaleString() }} ft²
+      <span v-if="costBreakdown.stCost > 0" class="ms-1">({{ formatCurrency(costBreakdown.stCost) }})</span>
     </v-chip>
     <v-chip v-if="costBreakdown.totalCost > 0" class="mx-2">
-      Total Cost: ${{ Math.round(costBreakdown.totalCost) }}
+      Total Cost: {{ formatCurrency(costBreakdown.totalCost) }}
     </v-chip>
   </div>
   <div class="font-weight-bold">Grass Type Ratio</div>
