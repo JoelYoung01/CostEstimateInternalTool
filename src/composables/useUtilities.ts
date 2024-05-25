@@ -9,6 +9,13 @@ interface UtilityComposable {
    * @param date The date to compare to today.
    */
   daysFromToday: (date: Date) => number;
+
+  /**
+   * Formats a number as currency.
+   * @param value Value to format as currency.
+   * @returns The value formatted as currency.
+   */
+  formatCurrency: (value: number) => string;
 }
 
 export function useUtilities(): UtilityComposable {
@@ -25,8 +32,16 @@ export function useUtilities(): UtilityComposable {
     return diffDays;
   };
 
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD"
+    });
+  };
+
   return {
     nextWeek,
-    daysFromToday
+    daysFromToday,
+    formatCurrency
   };
 }
