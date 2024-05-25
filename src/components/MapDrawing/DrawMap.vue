@@ -43,6 +43,8 @@ const mapRef = ref<InstanceType<typeof GoogleMap>>();
 const commentGetter = ref<InstanceType<typeof GetComment>>();
 const polygons = ref<(google.maps.Polygon | undefined)[]>([]);
 const selectedMode = ref<"cursor" | "draw">("draw");
+const showUserMarker = ref(true);
+const userLocation = ref<google.maps.LatLngLiteral>();
 
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -70,6 +72,17 @@ const polygonMarkers = computed(() => {
     };
   });
 });
+const allMarkers = computed(() => {
+  const allMarkers = [...polygonMarkers.value];
+
+  if (showUserMarker.value && userLocation.value) {
+    allMarkers.push({
+      position: userLocation.value
+    });
+  }
+
+  return allMarkers;
+});
 
 const centerOnUser = () => {
   if (!mapRef.value) return;
@@ -79,6 +92,13 @@ const centerOnUser = () => {
       lat: position.coords.latitude,
       lng: position.coords.longitude
     });
+
+    // Add a marker at the user's location
+    userLocation.value = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude
+    };
+    showUserMarker.value = true;
   });
 };
 
@@ -111,7 +131,6 @@ const loadPolygonsFromDataPackage = () => {
   const maxPolygonId = dataPackageStore.dataPackage.drawnAreas.reduce((acc, cur) => Math.max(acc, cur.id), 0);
   polygons.value.forEach((p) => {
     toRaw(p)?.setMap(null);
-    console.debug("Removing polygon from map", p);
   });
   polygons.value = [];
   polygons.value.fill(undefined, 0, maxPolygonId + 1);
@@ -184,6 +203,7 @@ const handleNewPolygon = async (newPolygon: google.maps.Polygon) => {
 
   polygons.value[polygonId] = newPolygon;
   dataPackageStore.dataPackage.drawnAreas.push(newDrawnArea);
+  setMode("cursor");
 };
 
 /**
@@ -205,6 +225,9 @@ const clearAllPolygons = () => {
   dataPackageStore.dataPackage.drawnAreas = [];
   polygons.value.forEach((p) => typeof p === "undefined" || toRaw(p).setMap(null));
   polygons.value = [];
+
+  userLocation.value = undefined;
+  showUserMarker.value = false;
 };
 
 /**
@@ -286,11 +309,11 @@ function setMode(mode: "cursor" | "draw") {
 
   if (mode === "cursor") {
     drawingManager.value.setDrawingMode(null);
-    // dataPackageStore.dataPackage.drawnAreas.forEach((p) => p.polygon.setOptions(editablePolygon));
   } else {
     drawingManager.value.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    // dataPackageStore.dataPackage.drawnAreas.forEach((p) => p.polygon.setOptions(staticPolygon));
   }
+
+  selectedMode.value = mode;
 }
 
 onMounted(() => {
@@ -329,29 +352,20 @@ onBeforeUnmount(() => {
     disable-default-ui
     @dblclick.stop
   >
-    <Marker v-for="marker in polygonMarkers" :key="marker.label" :options="marker" />
+    <Marker v-for="marker in allMarkers" :key="marker.label" :options="marker" />
 
     <CustomControl position="TOP_CENTER" class="ma-1">
       <PlaceSelector :disabled="!!error" @place-selected="centerOnPlace" />
     </CustomControl>
 
     <CustomControl position="TOP_RIGHT" class="ma-1">
-      <v-btn-toggle v-model="selectedMode" mandatory>
-        <v-btn
-          value="cursor"
-          size="small"
-          :color="selectedMode === 'cursor' ? 'primary' : 'default'"
-          icon="mdi-cursor-pointer"
-          @click="setMode('cursor')"
-        />
-        <v-btn
-          :color="selectedMode === 'draw' ? 'primary' : 'default'"
-          value="draw"
-          size="small"
-          icon="mdi-draw"
-          @click="setMode('draw')"
-        />
-      </v-btn-toggle>
+      <v-btn v-if="selectedMode === 'draw'" :disabled="polygonMarkers.length === 0" @click="setMode('cursor')">
+        Cancel
+      </v-btn>
+      <v-btn v-else-if="selectedMode === 'cursor'" color="secondary" @click="setMode('draw')">
+        <v-icon start>mdi-pencil</v-icon>
+        Draw {{ polygonMarkers.length > 0 ? "another" : "an" }} Area
+      </v-btn>
     </CustomControl>
 
     <CustomControl position="RIGHT_CENTER" class="d-flex flex-column ma-1">
@@ -362,7 +376,7 @@ onBeforeUnmount(() => {
     <CustomControl position="BOTTOM_CENTER" class="ma-1">
       <DrawingManager
         :total-area="totalArea"
-        :disabled-clear-all="polygonCount === 0"
+        :disabled-clear-all="polygonCount === 0 && !userLocation"
         @center-on-user="centerOnUser()"
         @clear-all-polygons="clearAllPolygons()"
       />
