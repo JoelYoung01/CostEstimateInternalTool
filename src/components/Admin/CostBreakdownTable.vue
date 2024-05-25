@@ -13,13 +13,13 @@ function getMinSqFt(tier: number) {
 </script>
 
 <template>
-  <v-table>
+  <v-table hover>
     <thead>
       <tr>
-        <th>Tier</th>
-        <th>SqFt Range</th>
-        <th>KBG Cost (ft²)</th>
-        <th>ST Cost (ft²)</th>
+        <th class="font-weight-bold">Tier</th>
+        <th class="font-weight-bold">SqFt Range</th>
+        <th class="font-weight-bold">KBG Cost (ft²)</th>
+        <th class="font-weight-bold">ST Cost (ft²)</th>
       </tr>
     </thead>
     <tbody>

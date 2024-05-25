@@ -31,24 +31,22 @@ const costBreakdown = computed(() => getProjectCost(kbgArea.value, stArea.value)
     </v-chip>
   </div>
   <div class="font-weight-bold">Grass Type Ratio</div>
-  <div class="d-flex justify-center">
-    <v-slider
-      v-model="typeRatio"
-      thumb-label="always"
-      thumb-size="24"
-      label="Grass Type Ratio"
-      track-color="secondary"
-      class="mx-2"
-    >
-      <template #label>
-        <v-badge color="primary" class="ms-1 me-3" />
-        {{ Math.round(100 - typeRatio) }}% Kentucky Blue Grass
-        <v-badge color="secondary" class="ms-6 me-3" />
-        {{ Math.round(typeRatio) }}% St. Augustine
-      </template>
-      <template #thumb-label>
-        <div>{{ Math.round(typeRatio) }}%</div>
-      </template>
-    </v-slider>
-  </div>
+  <v-slider
+    v-model="typeRatio"
+    thumb-label="always"
+    thumb-size="24"
+    label="Grass Type Ratio"
+    track-color="secondary"
+    class="mx-2"
+  >
+    <template #label>
+      <v-badge color="primary" class="ms-1 me-3" />
+      {{ Math.round(typeRatio) }}% Kentucky Blue Grass
+      <v-badge color="secondary" class="ms-6 me-3" />
+      <div class="me-4">{{ Math.round(100 - typeRatio) }}% St. Augustine</div>
+    </template>
+    <template #thumb-label>
+      <div>{{ Math.round(typeRatio) }}%</div>
+    </template>
+  </v-slider>
 </template>
