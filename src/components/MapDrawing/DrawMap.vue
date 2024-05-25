@@ -43,8 +43,8 @@ const mapRef = ref<InstanceType<typeof GoogleMap>>();
 const commentGetter = ref<InstanceType<typeof GetComment>>();
 const polygons = ref<(google.maps.Polygon | undefined)[]>([]);
 const selectedMode = ref<"cursor" | "draw">("draw");
-const showUserMarker = ref(true);
-const userLocation = ref<google.maps.LatLngLiteral>();
+const showLocationMarker = ref(true);
+const locationMarkerPos = ref<google.maps.LatLngLiteral>();
 
 const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -75,9 +75,9 @@ const polygonMarkers = computed(() => {
 const allMarkers = computed(() => {
   const allMarkers = [...polygonMarkers.value];
 
-  if (showUserMarker.value && userLocation.value) {
+  if (showLocationMarker.value && locationMarkerPos.value) {
     allMarkers.push({
-      position: new google.maps.LatLng(userLocation.value),
+      position: new google.maps.LatLng(locationMarkerPos.value),
       label: ""
     });
   }
@@ -95,11 +95,11 @@ const centerOnUser = () => {
     });
 
     // Add a marker at the user's location
-    userLocation.value = {
+    locationMarkerPos.value = {
       lat: position.coords.latitude,
       lng: position.coords.longitude
     };
-    showUserMarker.value = true;
+    showLocationMarker.value = true;
   });
 };
 
@@ -110,6 +110,13 @@ const centerOnPlace = (place_id?: string) => {
   service.getDetails({ placeId: place_id }, (place, status) => {
     if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
       mapRef.value?.map?.setCenter(place.geometry.location);
+
+      // Add a marker at the place
+      locationMarkerPos.value = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      };
+      showLocationMarker.value = true;
     }
   });
 };
@@ -227,8 +234,8 @@ const clearAllPolygons = () => {
   polygons.value.forEach((p) => typeof p === "undefined" || toRaw(p).setMap(null));
   polygons.value = [];
 
-  userLocation.value = undefined;
-  showUserMarker.value = false;
+  locationMarkerPos.value = undefined;
+  showLocationMarker.value = false;
 };
 
 /**
@@ -377,7 +384,7 @@ onBeforeUnmount(() => {
     <CustomControl position="BOTTOM_CENTER" class="ma-1">
       <DrawingManager
         :total-area="totalArea"
-        :disabled-clear-all="polygonCount === 0 && !userLocation"
+        :disabled-clear-all="polygonCount === 0 && !locationMarkerPos"
         @center-on-user="centerOnUser()"
         @clear-all-polygons="clearAllPolygons()"
       />
